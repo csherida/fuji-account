@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'fuji-account
+
+  Sample SAM Template for fuji-account
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  FujiAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: FujiAccountFunction
+      Handler: Handler
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET
+      Environment:
+        Variables:
+          PARAM1: VALUE
+Outputs:
+  HelloWorldAPI:
+    Description: API Gateway endpoint URL for Prod environment for First Function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/
+  FujiAccountFunction:
+    Description: Fuji Account Management ARN
+    Value:
+      Fn::GetAtt:
+      - FujiAccountFunction
+      - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Fuji Account function
+    Value:
+      Fn::GetAtt:
+      - FujiAccountFunctionRole
+      - Arn
