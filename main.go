@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"fuji-account/internal/datastore/dynamoDB"
+	"fuji-account/internal/models"
 	"io/ioutil"
 	"net/http"
 
@@ -47,21 +49,14 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 }
 
 func main() {
-	lambda.Start(handler)
+	lambda.Start(show)
 }
 
-type book struct {
-	ISBN   string `json:"isbn"`
-	Title  string `json:"title"`
-	Author string `json:"author"`
-}
-
-func show() (*book, error) {
-	bk := &book{
-		ISBN:   "978-1420931693",
-		Title:  "The Republic",
-		Author: "Plato",
+func show() (*models.FujiAccount, error) {
+	acct, err := dynamoDB.GetItem("1")
+	if err != nil {
+		return nil, err
 	}
 
-	return bk, nil
+	return acct, nil
 }

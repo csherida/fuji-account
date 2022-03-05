@@ -12,7 +12,7 @@ import (
 // use.
 var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("us-east-1"))
 
-func getItem(fujiID string) (*models.FujiAccount, error) {
+func GetItem(fujiID string) (*models.FujiAccount, error) {
 	// Prepare the input for the query.
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String("FujiAccounts"),
