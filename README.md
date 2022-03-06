@@ -12,6 +12,11 @@ This is a sample template for fuji-account - Below is a brief explanation of wha
 └── template.yaml
 ```
 
+To Build...
+GOOS=linux go build -o ~/Temp fuji-account
+zip -j ~/Temp/fuji-account.zip ~/Temp/fuji-account
+Upload Zip file to AWS Lambda and specify fuji-account as the handler
+
 ## Requirements
 
 * AWS CLI already configured with Administrator permission
