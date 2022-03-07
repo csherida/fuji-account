@@ -12,7 +12,8 @@ import (
 // use.
 var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("us-east-1"))
 
-func getItem(fujiID string) (*models.FujiAccount, error) {
+// Fetch a Fuji account from the database
+func GetItem(fujiID string) (*models.FujiAccount, error) {
 	// Prepare the input for the query.
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String("FujiAccounts"),
@@ -45,4 +46,25 @@ func getItem(fujiID string) (*models.FujiAccount, error) {
 	}
 
 	return acct, nil
+}
+
+// Add a new Fuji account to DynamoDB.
+func PutItem(acct *models.FujiAccount) error {
+	input := &dynamodb.PutItemInput{
+		TableName: aws.String("FujiAccounts"),
+		Item: map[string]*dynamodb.AttributeValue{
+			"FujiID": {
+				S: aws.String(acct.FujiID),
+			},
+			"AmazonToken": {
+				S: aws.String(acct.AmazonToken),
+			},
+			"AppleToken": {
+				S: aws.String(acct.AppleToken),
+			},
+		},
+	}
+
+	_, err := db.PutItem(input)
+	return err
 }
