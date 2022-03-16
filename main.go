@@ -73,7 +73,7 @@ func show(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, er
 	}
 
 	// Fetch account info from the database
-	acct, err := dynamoDB.GetItem("1")
+	acct, err := dynamoDB.GetAccountByFujiID("1")
 	if err != nil {
 		return serverError(err)
 	}
