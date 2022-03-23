@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"log"
 )
 
 // Fetch a Fuji account from the database using the FujiID
@@ -94,8 +95,8 @@ func PutItem(acct *models.FujiAccount) error {
 	}
 
 	svc := dynamodb.NewFromConfig(cfg)
-	out, err := svc.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: aws.String("FujiAccount"),
+	_, err = svc.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: aws.String("FujiAccounts"),
 		Item: map[string]types.AttributeValue{
 			"FujiID":      &types.AttributeValueMemberS{Value: acct.FujiID},
 			"AmazonToken": &types.AttributeValueMemberS{Value: acct.AmazonToken},
@@ -103,6 +104,9 @@ func PutItem(acct *models.FujiAccount) error {
 		},
 	})
 
-	fmt.Println(out.Attributes)
+	if err != nil {
+		log.Println("Unable to write Fuji Account record for Fuji ID " + acct.FujiID)
+	}
+
 	return err
 }
