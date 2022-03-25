@@ -65,25 +65,44 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 func show(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	// Validate input paramater
-	// TODO: Do a RegEx once UUID is in place
 	fujiID := req.QueryStringParameters["fuji-id"]
-	if _, err := strconv.Atoi(fujiID); err != nil {
-		log.Printf("An invalid fujiid was given by the client.")
+	amazonToken := req.QueryStringParameters["amazon-token"]
+
+	var fujiAcct *models.FujiAccount
+	var dbError error
+
+	// start with the FujiID and override any Amazon Token provided
+	if fujiID != "" {
+		// Parse string to an integer
+		if _, err := strconv.Atoi(fujiID); err != nil {
+			log.Printf("An invalid fujiid was given by the client.")
+			return clientError(http.StatusBadRequest)
+		}
+
+		// Fetch account info from the database
+		acct, err := dynamoDB.GetAccountByFujiID("1")
+		fujiAcct = acct
+		dbError = err
+	} else if amazonToken != "" {
+		// TODO: Do a RegEx once UUID is in place
+		acct, err := dynamoDB.GetAccountByAmazonToken(amazonToken)
+		fujiAcct = acct
+		dbError = err
+	} else {
+		log.Printf("Neither FujiID nor AmazonToken provided.")
 		return clientError(http.StatusBadRequest)
 	}
 
-	// Fetch account info from the database
-	acct, err := dynamoDB.GetItem("1")
-	if err != nil {
-		return serverError(err)
+	if dbError != nil {
+		return serverError(dbError)
 	}
-	if acct == nil {
+	if fujiAcct == nil {
 		return clientError(http.StatusNotFound)
 	}
 
 	// The APIGatewayProxyResponse.Body field needs to be a string, so
 	// we marshal the account record into JSON.
-	js, err := json.Marshal(acct)
+	js, err := json.Marshal(fujiAcct)
 	if err != nil {
 		return serverError(err)
 	}

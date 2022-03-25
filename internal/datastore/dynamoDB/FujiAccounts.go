@@ -1,46 +1,81 @@
 package dynamoDB
 
 import (
+	"context"
+	"fmt"
 	"fuji-account/internal/models"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"log"
 )
 
-// Declare a new DynamoDB instance. Note that this is safe for concurrent
-// use.
-var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("us-east-1"))
+// Fetch a Fuji account from the database using the FujiID
+func GetAccountByFujiID(fujiID string) (*models.FujiAccount, error) {
 
-// Fetch a Fuji account from the database
-func GetItem(fujiID string) (*models.FujiAccount, error) {
-	// Prepare the input for the query.
-	input := &dynamodb.GetItemInput{
-		TableName: aws.String("FujiAccounts"),
-		Key: map[string]*dynamodb.AttributeValue{
-			"FujiID": {
-				S: aws.String(fujiID),
-			},
-		},
+	cfg, err := config.LoadDefaultConfig(context.TODO(), func(o *config.LoadOptions) error {
+		o.Region = "us-east-1"
+		return nil
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	// Retrieve the item from DynamoDB. If no matching item is found
-	// return nil.
-	result, err := db.GetItem(input)
+	svc := dynamodb.NewFromConfig(cfg)
+	result, err := svc.GetItem(context.TODO(), &dynamodb.GetItemInput{
+		TableName: aws.String("FujiAccounts"),
+		Key: map[string]types.AttributeValue{
+			"FujiID": &types.AttributeValueMemberS{Value: fujiID},
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(result.Item)
+
+	// Map the result to FujiAccount
+	acct := new(models.FujiAccount)
+	err = attributevalue.UnmarshalMap(result.Item, acct)
 	if err != nil {
 		return nil, err
 	}
-	if result.Item == nil {
-		return nil, nil
+
+	return acct, nil
+}
+
+// Fetch a Fuji account from the database using the Amazon Token
+func GetAccountByAmazonToken(amazonToken string) (*models.FujiAccount, error) {
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), func(o *config.LoadOptions) error {
+		o.Region = "us-east-1"
+		return nil
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	// The result.Item object returned has the underlying type
-	// map[string]*AttributeValue. We can use the UnmarshalMap helper
-	// to parse this straight into the fields of a struct. Note:
-	// UnmarshalListOfMaps also exists if you are working with multiple
-	// items.
+	svc := dynamodb.NewFromConfig(cfg)
+	result, err := svc.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              aws.String("FujiAccounts"),
+		IndexName:              aws.String("AmazonToken-index"),
+		KeyConditionExpression: aws.String("AmazonToken = :AmazonToken"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":AmazonToken": &types.AttributeValueMemberS{Value: amazonToken},
+			//":gsi1sk": &types.AttributeValueMemberN{Value: "20150101"},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Map the result to FujiAccount
 	acct := new(models.FujiAccount)
-	err = dynamodbattribute.UnmarshalMap(result.Item, acct)
+	//TODO: Handle if more than 1
+	err = attributevalue.UnmarshalMap(result.Items[0], acct)
 	if err != nil {
 		return nil, err
 	}
@@ -50,21 +85,28 @@ func GetItem(fujiID string) (*models.FujiAccount, error) {
 
 // Add a new Fuji account to DynamoDB.
 func PutItem(acct *models.FujiAccount) error {
-	input := &dynamodb.PutItemInput{
-		TableName: aws.String("FujiAccounts"),
-		Item: map[string]*dynamodb.AttributeValue{
-			"FujiID": {
-				S: aws.String(acct.FujiID),
-			},
-			"AmazonToken": {
-				S: aws.String(acct.AmazonToken),
-			},
-			"AppleToken": {
-				S: aws.String(acct.AppleToken),
-			},
-		},
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), func(o *config.LoadOptions) error {
+		o.Region = "us-east-1"
+		return nil
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	_, err := db.PutItem(input)
+	svc := dynamodb.NewFromConfig(cfg)
+	_, err = svc.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: aws.String("FujiAccounts"),
+		Item: map[string]types.AttributeValue{
+			"FujiID":      &types.AttributeValueMemberS{Value: acct.FujiID},
+			"AmazonToken": &types.AttributeValueMemberS{Value: acct.AmazonToken},
+			"AppleToken":  &types.AttributeValueMemberS{Value: acct.AppleToken},
+		},
+	})
+
+	if err != nil {
+		log.Println("Unable to write Fuji Account record for Fuji ID " + acct.FujiID)
+	}
+
 	return err
 }

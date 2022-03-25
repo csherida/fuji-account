@@ -32,7 +32,7 @@ func Test_getItem(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetItem(tt.args.fujiID)
+			got, err := GetAccountByFujiID(tt.args.fujiID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getItem() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -69,6 +69,43 @@ func TestPutItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := PutItem(tt.args.acct); (err != nil) != tt.wantErr {
 				t.Errorf("PutItem() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetAccountByAmazonToken(t *testing.T) {
+	type args struct {
+		amazonToken string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *models.FujiAccount
+		wantErr bool
+	}{
+		{
+			name: "Simple Account ID Test",
+			args: args{
+				amazonToken: "amzn1.ask.account.testUser",
+			},
+			want: &models.FujiAccount{
+				FujiID:      "88",
+				AmazonToken: "amzn1.ask.account.testUser",
+				AppleToken:  "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetAccountByAmazonToken(tt.args.amazonToken)
+			got.AppleToken = ""
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAccountByAmazonToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetAccountByAmazonToken() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
