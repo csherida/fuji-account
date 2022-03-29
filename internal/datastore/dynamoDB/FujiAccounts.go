@@ -69,7 +69,12 @@ func GetAccountByAmazonToken(amazonToken string) (*models.FujiAccount, error) {
 		},
 	})
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	// return nil if nothing found
+	if len(result.Items) == 0 {
+		return nil, nil
 	}
 
 	// Map the result to FujiAccount
@@ -83,7 +88,7 @@ func GetAccountByAmazonToken(amazonToken string) (*models.FujiAccount, error) {
 	return acct, nil
 }
 
-// Add a new Fuji account to DynamoDB.
+// PutItem adds a new Fuji account to DynamoDB.
 func PutItem(acct *models.FujiAccount) error {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), func(o *config.LoadOptions) error {
@@ -98,9 +103,10 @@ func PutItem(acct *models.FujiAccount) error {
 	_, err = svc.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("FujiAccounts"),
 		Item: map[string]types.AttributeValue{
-			"FujiID":      &types.AttributeValueMemberS{Value: acct.FujiID},
-			"AmazonToken": &types.AttributeValueMemberS{Value: acct.AmazonToken},
-			"AppleToken":  &types.AttributeValueMemberS{Value: acct.AppleToken},
+			"FujiID":       &types.AttributeValueMemberS{Value: acct.FujiID},
+			"AmazonToken":  &types.AttributeValueMemberS{Value: acct.AmazonToken},
+			"AppleToken":   &types.AttributeValueMemberS{Value: acct.AppleToken},
+			"FujiFolderID": &types.AttributeValueMemberS{Value: acct.FujiFolderID},
 		},
 	})
 

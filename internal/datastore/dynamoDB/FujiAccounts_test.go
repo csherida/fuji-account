@@ -85,21 +85,32 @@ func TestGetAccountByAmazonToken(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Simple Account ID Test",
+			name: "Get Acct by Amazon Token",
 			args: args{
 				amazonToken: "amzn1.ask.account.testUser",
 			},
 			want: &models.FujiAccount{
-				FujiID:      "88",
-				AmazonToken: "amzn1.ask.account.testUser",
-				AppleToken:  "",
+				FujiID:       "88",
+				AmazonToken:  "amzn1.ask.account.testUser",
+				AppleToken:   "",
+				FujiFolderID: "p.KoZ1ACaN0ZO2",
 			},
+		},
+		{
+			name: "Get Acct by Amazon Token, Negative Test",
+			args: args{
+				amazonToken: "amzn1.ask.account.bogusUser",
+			},
+			want:    nil,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetAccountByAmazonToken(tt.args.amazonToken)
-			got.AppleToken = ""
+			if got != nil {
+				got.AppleToken = ""
+			}
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAccountByAmazonToken() error = %v, wantErr %v", err, tt.wantErr)
 				return
